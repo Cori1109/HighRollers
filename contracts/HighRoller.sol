@@ -13,9 +13,10 @@ contract HighRoller is ERC721Enumerable, Ownable{
     // constants
     uint256 public constant MAX_ELEMENTS = 7777;
     uint256 public constant PURCHASE_LIMIT = 10;
+    enum STAGE { FAMILY_SALE, PRE_SALE, PUBLIC_SALE }
 
     // state variable
-    uint256 public CURRENT_STAGE = 1;
+    STAGE public CURRENT_STAGE = STAGE.FAMILY_SALE;
     uint256 public CURRENT_PRICE = 0.2 ether;
     bool public MINTING_PAUSED = true;
     string public baseTokenURI;
@@ -40,7 +41,7 @@ contract HighRoller is ERC721Enumerable, Ownable{
     function privateSale(uint256 numberOfTokens) external payable {
         require(!MINTING_PAUSED, "Minting is not active");
         require(friendWhiteList[msg.sender], "You are not on the friend white list");
-        require(CURRENT_STAGE == 1, "Current stage should be 1");
+        require(CURRENT_STAGE == STAGE.FAMILY_SALE, "Current stage should be FAMILY_SALE");
         require(totalSupply() < MAX_ELEMENTS, 'All tokens have been minted');
         require(totalSupply() + numberOfTokens < MAX_ELEMENTS, 'Purchase would exceed max supply');
         require(_allowListClaimed[msg.sender] + numberOfTokens <= PURCHASE_LIMIT, 'Purchase exceeds max allowed');
@@ -56,11 +57,41 @@ contract HighRoller is ERC721Enumerable, Ownable{
     }
 
     function preSale(uint256 numberOfTokens) external payable {
+        require(!MINTING_PAUSED, "Minting is not active");
+        require(discordWhiteList[msg.sender], "You are not on the discord white list");
+        require(CURRENT_STAGE == STAGE.PRE_SALE, "Current stage should be PRE_SALE");
+        require(totalSupply() < MAX_ELEMENTS, 'All tokens have been minted');
+        require(totalSupply() + numberOfTokens < MAX_ELEMENTS, 'Purchase would exceed max supply');
+        require(_allowListClaimed[msg.sender] + numberOfTokens <= PURCHASE_LIMIT, 'Purchase exceeds max allowed');
+        require(CURRENT_PRICE * numberOfTokens <= msg.value, 'ETH amount is not sufficient');
 
+        for (uint256 i = 0; i < numberOfTokens; i++) {
+            _tokenIdTracker.increment();
+
+            claimedList[_tokenIdTracker.current()] = msg.sender; // should be checked
+            _allowListClaimed[msg.sender] += 1;
+            _safeMint(msg.sender, _tokenIdTracker.current());
+        }
     }
 
     function publicMint(uint256 numberOfTokens) external payable {
+        require(!MINTING_PAUSED, "Minting is not active");
+        require(CURRENT_STAGE == STAGE.PUBLIC_SALE, "Current stage should be PUBLIC_SALE");
+        require(totalSupply() < MAX_ELEMENTS, 'All tokens have been minted');
+        require(totalSupply() + numberOfTokens < MAX_ELEMENTS, 'Purchase would exceed max supply');
+        require(_allowListClaimed[msg.sender] + numberOfTokens <= PURCHASE_LIMIT, 'Purchase exceeds max allowed');
+        require(CURRENT_PRICE * numberOfTokens <= msg.value, 'ETH amount is not sufficient');
 
+        for (uint256 i = 0; i < numberOfTokens; i++) {
+            _tokenIdTracker.increment();
+
+            claimedList[_tokenIdTracker.current()] = msg.sender; // should be checked
+            _allowListClaimed[msg.sender] += 1;
+            _safeMint(msg.sender, _tokenIdTracker.current());
+        }
+    }
+
+    function openBounty() external onlyOwner {   
     }
 
     function setCurrentPrice(uint256 price) external {
@@ -82,7 +113,7 @@ contract HighRoller is ERC721Enumerable, Ownable{
     }
 
     function setStage(uint256 _stage) external onlyOwner {
-        CURRENT_STAGE = _stage;
+        CURRENT_STAGE = STAGE(_stage);
     }
 
     function withdraw() external onlyOwner {
