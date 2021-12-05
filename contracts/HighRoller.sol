@@ -11,16 +11,21 @@ contract HighRoller is ERC721Enumerable, Ownable{
     using Counters for Counters.Counter;
 
     // constants
-    uint256 public constant MAX_ELEMENTS = 7777;
-    uint256 public constant PURCHASE_LIMIT = 10;
+    uint256 constant MAX_ELEMENTS = 7777;
+    uint256 constant PURCHASE_LIMIT = 10;
+    uint256 constant STAGE1_PRICE = 0.0777 ether;
+    uint256 constant STAGE2_PRICE = 0.08547 ether;
+    uint256 constant STAGE3_PRICE = 0.094017 ether;
+    uint256 constant BOUNTY_AMOUNT = 0.25974 ether;
+    uint256 constant NUM_OF_BOUNTY = 77;
     enum STAGE { FAMILY_SALE, PRE_SALE, PUBLIC_SALE }
 
     // state variable
     STAGE public CURRENT_STAGE = STAGE.FAMILY_SALE;
-    uint256 public CURRENT_PRICE = 0.2 ether;
     bool public MINTING_PAUSED = true;
     string public baseTokenURI;
-    string public _contractURI = '';
+    string public _contractURI = "";
+    uint256 randNonce = 0;
 
     Counters.Counter private _tokenIdTracker;
 
@@ -30,6 +35,9 @@ contract HighRoller is ERC721Enumerable, Ownable{
     
     mapping(uint256 => address) private claimedList;
     mapping(address => uint256) private _allowListClaimed;
+
+    // bounty whitelist
+    mapping(address => bool) bountyList;
 
     constructor() ERC721("HighRoller", "HighRoller"){
     }
@@ -45,7 +53,7 @@ contract HighRoller is ERC721Enumerable, Ownable{
         require(totalSupply() < MAX_ELEMENTS, 'All tokens have been minted');
         require(totalSupply() + numberOfTokens < MAX_ELEMENTS, 'Purchase would exceed max supply');
         require(_allowListClaimed[msg.sender] + numberOfTokens <= PURCHASE_LIMIT, 'Purchase exceeds max allowed');
-        require(CURRENT_PRICE * numberOfTokens <= msg.value, 'ETH amount is not sufficient');
+        require(STAGE1_PRICE * numberOfTokens <= msg.value, 'ETH amount is not sufficient');
 
         for (uint256 i = 0; i < numberOfTokens; i++) {
             _tokenIdTracker.increment();
@@ -63,7 +71,7 @@ contract HighRoller is ERC721Enumerable, Ownable{
         require(totalSupply() < MAX_ELEMENTS, 'All tokens have been minted');
         require(totalSupply() + numberOfTokens < MAX_ELEMENTS, 'Purchase would exceed max supply');
         require(_allowListClaimed[msg.sender] + numberOfTokens <= PURCHASE_LIMIT, 'Purchase exceeds max allowed');
-        require(CURRENT_PRICE * numberOfTokens <= msg.value, 'ETH amount is not sufficient');
+        require(STAGE2_PRICE * numberOfTokens <= msg.value, 'ETH amount is not sufficient');
 
         for (uint256 i = 0; i < numberOfTokens; i++) {
             _tokenIdTracker.increment();
@@ -80,7 +88,7 @@ contract HighRoller is ERC721Enumerable, Ownable{
         require(totalSupply() < MAX_ELEMENTS, 'All tokens have been minted');
         require(totalSupply() + numberOfTokens < MAX_ELEMENTS, 'Purchase would exceed max supply');
         require(_allowListClaimed[msg.sender] + numberOfTokens <= PURCHASE_LIMIT, 'Purchase exceeds max allowed');
-        require(CURRENT_PRICE * numberOfTokens <= msg.value, 'ETH amount is not sufficient');
+        require(STAGE3_PRICE * numberOfTokens <= msg.value, 'ETH amount is not sufficient');
 
         for (uint256 i = 0; i < numberOfTokens; i++) {
             _tokenIdTracker.increment();
@@ -91,11 +99,32 @@ contract HighRoller is ERC721Enumerable, Ownable{
         }
     }
 
-    function openBounty() external onlyOwner {   
+    function openBounty() external onlyOwner {
+        uint256 index = 0;
+        uint256 totalSupply = totalSupply();
+
+        while(true) {
+            uint256 selectedIdx = randMod(totalSupply);
+            address selectedClaimer = claimedList[selectedIdx + 1];
+            if (!bountyList[selectedClaimer]) {
+                bountyList[selectedClaimer] = true;
+                payable(selectedClaimer).transfer(BOUNTY_AMOUNT);
+                index ++;
+                if (index >= NUM_OF_BOUNTY)
+                    break;
+            }
+        }
     }
 
-    function setCurrentPrice(uint256 price) external {
-        CURRENT_PRICE = price;
+    // returns random number between 0 to _modulus
+    function randMod(uint256 _modulus) internal returns(uint256)
+    {
+        // increase nonce
+        randNonce++;
+        return uint256(keccak256(abi.encodePacked(block.timestamp,
+                                                msg.sender,
+                                                randNonce))) %
+                                                _modulus;
     }
 
     function setFriendWhiteList(address[] calldata addresses) external onlyOwner {
