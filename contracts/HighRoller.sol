@@ -12,10 +12,11 @@ contract HighRoller is ERC721Enumerable, Ownable{
 
     // constants
     uint256 constant MAX_ELEMENTS = 7777;
-    uint256 constant PURCHASE_LIMIT = 10;
+    uint256 constant PURCHASE_LIMIT1 = 20;
+    uint256 constant PURCHASE_LIMIT2 = 3;
     uint256 constant STAGE1_PRICE = 0.0777 ether;
     uint256 constant STAGE2_PRICE = 0.08547 ether;
-    uint256 constant STAGE3_PRICE = 0.094017 ether;
+    uint256 constant STAGE3_PRICE = 0.09829 ether;
     uint256 constant BOUNTY_AMOUNT = 0.25974 ether;
     uint256 constant NUM_OF_BOUNTY = 77;
     enum STAGE { FAMILY_SALE, PRE_SALE, PUBLIC_SALE }
@@ -52,7 +53,7 @@ contract HighRoller is ERC721Enumerable, Ownable{
         require(CURRENT_STAGE == STAGE.FAMILY_SALE, "Current stage should be FAMILY_SALE");
         require(totalSupply() < MAX_ELEMENTS, 'All tokens have been minted');
         require(totalSupply() + numberOfTokens < MAX_ELEMENTS, 'Purchase would exceed max supply');
-        require(_allowListClaimed[msg.sender] + numberOfTokens <= PURCHASE_LIMIT, 'Purchase exceeds max allowed');
+        require(_allowListClaimed[msg.sender] + numberOfTokens <= PURCHASE_LIMIT1, 'Purchase exceeds max allowed');
         require(STAGE1_PRICE * numberOfTokens <= msg.value, 'ETH amount is not sufficient');
 
         for (uint256 i = 0; i < numberOfTokens; i++) {
@@ -70,7 +71,7 @@ contract HighRoller is ERC721Enumerable, Ownable{
         require(CURRENT_STAGE == STAGE.PRE_SALE, "Current stage should be PRE_SALE");
         require(totalSupply() < MAX_ELEMENTS, 'All tokens have been minted');
         require(totalSupply() + numberOfTokens < MAX_ELEMENTS, 'Purchase would exceed max supply');
-        require(_allowListClaimed[msg.sender] + numberOfTokens <= PURCHASE_LIMIT, 'Purchase exceeds max allowed');
+        require(_allowListClaimed[msg.sender] + numberOfTokens <= PURCHASE_LIMIT2, 'Purchase exceeds max allowed');
         require(STAGE2_PRICE * numberOfTokens <= msg.value, 'ETH amount is not sufficient');
 
         for (uint256 i = 0; i < numberOfTokens; i++) {
@@ -87,7 +88,7 @@ contract HighRoller is ERC721Enumerable, Ownable{
         require(CURRENT_STAGE == STAGE.PUBLIC_SALE, "Current stage should be PUBLIC_SALE");
         require(totalSupply() < MAX_ELEMENTS, 'All tokens have been minted');
         require(totalSupply() + numberOfTokens < MAX_ELEMENTS, 'Purchase would exceed max supply');
-        require(_allowListClaimed[msg.sender] + numberOfTokens <= PURCHASE_LIMIT, 'Purchase exceeds max allowed');
+        require(_allowListClaimed[msg.sender] + numberOfTokens <= PURCHASE_LIMIT2, 'Purchase exceeds max allowed');
         require(STAGE3_PRICE * numberOfTokens <= msg.value, 'ETH amount is not sufficient');
 
         for (uint256 i = 0; i < numberOfTokens; i++) {
